@@ -1,8 +1,10 @@
 use anyhow::Result;
+use itertools::Itertools;
 
 fn main() -> Result<()> {
-    let mut calories_per_elf: Vec<u32> =
-        aoc::load_input("one")?.lines().fold(vec![0], |mut res, l| {
+    let top_three = aoc::load_input("one")?
+        .lines()
+        .fold(vec![0], |mut res, l| {
             if l.is_empty() {
                 res.push(0);
                 res
@@ -11,15 +13,13 @@ fn main() -> Result<()> {
                 res[last] += l.parse::<u32>().unwrap();
                 res
             }
-        });
-    calories_per_elf.sort_unstable();
-    println!("Part one: {}", calories_per_elf.iter().max().unwrap());
-    println!(
-        "Part two: {}",
-        calories_per_elf
-            .split_off(calories_per_elf.len() - 3)
-            .into_iter()
-            .sum::<u32>()
-    );
+        })
+        .into_iter()
+        .sorted_unstable()
+        .rev()
+        .take(3)
+        .collect_vec();
+    println!("Part one: {}", top_three.iter().max().unwrap());
+    println!("Part two: {}", top_three.iter().sum::<u32>());
     Ok(())
 }
