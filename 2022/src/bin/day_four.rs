@@ -37,10 +37,7 @@ fn main() -> Result<()> {
         "Part two: {}",
         pairs
             .iter()
-            .filter(
-                |((s1, e1), (s2, e2))| ((s1 <= s2 && e1 >= s2) || (s1 <= e2 && e1 >= e2))
-                    || ((s2 <= s1 && e2 >= s1) || (s2 <= e1 && e2 >= e1))
-            )
+            .filter(|((s1, e1), (s2, e2))| s1 <= e2 && e1 >= s2)
             .collect_vec()
             .len()
     );
