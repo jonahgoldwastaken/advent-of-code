@@ -23,7 +23,7 @@ const SCISSORS_WIN: u8 = ROCK + WIN;
 const SCISSORS_DRAW: u8 = SCISSORS + DRAW;
 const SCISSORS_LOSS: u8 = PAPER + LOSS;
 
-fn calculate_round(them: char, you: Option<char>, result: Option<char>) -> Result<u32> {
+fn calculate_round(them: char, you: Option<char>, result: Option<char>) -> Result<u8> {
     if let Some(you) = you {
         let round = them.to_string() + &you.to_string();
         Ok(match round.as_str() {
@@ -37,7 +37,7 @@ fn calculate_round(them: char, you: Option<char>, result: Option<char>) -> Resul
             "CY" => SCISSORS_LOSS,
             "CZ" => SCISSORS_DRAW,
             _ => unreachable!(),
-        } as u32)
+        })
     } else if let Some(result) = result {
         let round = them.to_string() + &result.to_string();
         Ok(match round.as_str() {
@@ -51,7 +51,7 @@ fn calculate_round(them: char, you: Option<char>, result: Option<char>) -> Resul
             "CY" => SCISSORS_DRAW,
             "CZ" => SCISSORS_WIN,
             _ => unreachable!(),
-        } as u32)
+        })
     } else {
         Err(anyhow!(
             "supply either 'you' as Some(char) or 'result' as Some(char)"
@@ -77,14 +77,14 @@ fn main() -> Result<()> {
         "Part one: {}",
         rounds
             .iter()
-            .map(|(a, b)| calculate_round(*a, Some(*b), None).unwrap())
+            .map(|(a, b)| calculate_round(*a, Some(*b), None).unwrap() as u32)
             .sum::<u32>()
     );
     println!(
         "Part two: {}",
         rounds
             .iter()
-            .map(|(a, b)| calculate_round(*a, None, Some(*b)).unwrap())
+            .map(|(a, b)| calculate_round(*a, None, Some(*b)).unwrap() as u32)
             .sum::<u32>()
     );
     Ok(())
