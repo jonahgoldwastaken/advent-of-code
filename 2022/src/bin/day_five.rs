@@ -1,8 +1,7 @@
 use anyhow::Result;
 use itertools::Itertools;
-use std::collections::VecDeque;
 
-fn get_board(input: &str) -> Vec<VecDeque<char>> {
+fn get_board(input: &str) -> Vec<Vec<char>> {
     let mut raw_board = input
         .lines()
         .take_while(|l| !l.trim().is_empty())
@@ -17,11 +16,11 @@ fn get_board(input: &str) -> Vec<VecDeque<char>> {
     indices
         .iter()
         .map(|i| {
-            let mut vec: VecDeque<char> = VecDeque::new();
+            let mut vec: Vec<char> = Vec::new();
             for line in raw_board.iter().rev() {
                 let char = line.chars().nth(4 * i + 1).unwrap();
                 if char != ' ' {
-                    vec.push_back(char)
+                    vec.push(char)
                 }
             }
             vec
@@ -47,10 +46,10 @@ fn get_moves(input: &str) -> Vec<(usize, usize, usize)> {
         .collect_vec()
 }
 
-fn get_top(board: Vec<VecDeque<char>>) -> String {
+fn get_top(board: Vec<Vec<char>>) -> String {
     board
         .iter()
-        .map(|stack| *stack.back().unwrap())
+        .map(|stack| *stack.last().unwrap())
         .collect::<String>()
 }
 
@@ -65,7 +64,7 @@ fn main() -> Result<()> {
         let mut crates = Vec::with_capacity(amnt);
 
         while amnt > 0 {
-            crates.push(board_one.get_mut(*from).unwrap().pop_back().unwrap());
+            crates.push(board_one.get_mut(*from).unwrap().pop().unwrap());
             amnt -= 1;
         }
 
@@ -74,12 +73,12 @@ fn main() -> Result<()> {
 
     println!("Part one: {}", get_top(board_one));
 
-    let mut board_two = board.clone();
+    let mut board_two = board;
     for (amount, from, to) in moves {
         let mut amnt = amount;
         let mut crates = Vec::with_capacity(amnt);
         while amnt > 0 {
-            crates.push(board_two.get_mut(from).unwrap().pop_back().unwrap());
+            crates.push(board_two.get_mut(from).unwrap().pop().unwrap());
             amnt -= 1;
         }
         crates.reverse();
