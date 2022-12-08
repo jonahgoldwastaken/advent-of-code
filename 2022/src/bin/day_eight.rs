@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use itertools::Itertools;
 
 struct Grid {
@@ -24,11 +24,11 @@ impl Grid {
         self.cols.as_ref()
     }
 
-    fn col(&self, idx: usize) -> Option<&[u8]> {
+    fn col(&self, idx: usize) -> Result<&[u8]> {
         if idx < self.cols.len() {
-            Some(&self.cols[idx])
+            Ok(&self.cols[idx])
         } else {
-            None
+            Err(anyhow!("Invalid column index: {}", idx))
         }
     }
 }
@@ -45,47 +45,67 @@ fn main() -> Result<()> {
             .collect_vec(),
     );
 
-    println!("Part one: {}", part_one(&grid));
-    println!("Part two: {}", part_two(&grid));
+    println!("Part one: {}", part_one(&grid)?);
+    println!("Part two: {}", part_two(&grid)?);
     Ok(())
 }
 
-fn part_one(grid: &Grid) -> usize {
-    grid.rows().iter().enumerate().fold(0, |res, (i, row)| {
-        res + row.iter().enumerate().fold(0, |res, (j, tree)| {
-            let col = grid.cols().get(j).unwrap();
-            if visible_left(row, j, tree)
-                || visible_right(row, j, tree)
-                || visible_left(col, i, tree)
-                || visible_right(col, i, tree)
-            {
-                res + 1
-            } else {
-                res
-            }
-        })
-    })
-}
-
-fn part_two(grid: &Grid) -> usize {
-    grid.rows()
+fn part_one(grid: &Grid) -> Result<usize> {
+    match grid
+        .rows()
         .iter()
         .enumerate()
         .map(|(i, row)| {
-            row.iter()
+            match row
+                .iter()
                 .enumerate()
                 .map(|(j, tree)| {
-                    let col = grid.col(j).unwrap();
-                    count_left(row, j, tree)
+                    let col = grid.col(j)?;
+                    Ok((visible_left(row, j, tree)
+                        || visible_right(row, j, tree)
+                        || visible_left(col, i, tree)
+                        || visible_right(col, i, tree)) as usize)
+                })
+                .collect::<Result<Vec<usize>>>()
+            {
+                Ok(v) => Ok(v.into_iter().sum()),
+                Err(e) => Err(e),
+            }
+        })
+        .collect::<Result<Vec<usize>>>()
+    {
+        Ok(v) => Ok(v.into_iter().sum()),
+        Err(e) => Err(e),
+    }
+}
+
+fn part_two(grid: &Grid) -> Result<usize> {
+    match grid
+        .rows()
+        .iter()
+        .enumerate()
+        .map(|(i, row)| {
+            match row
+                .iter()
+                .enumerate()
+                .map(|(j, tree)| -> Result<_> {
+                    let col = grid.col(j)?;
+                    Ok(count_left(row, j, tree)
                         * count_right(row, j, tree)
                         * count_left(col, i, tree)
-                        * count_right(col, i, tree)
+                        * count_right(col, i, tree))
                 })
-                .max()
-                .unwrap()
+                .collect::<Result<Vec<_>>>()
+            {
+                Ok(v) => Ok(v.into_iter().max().unwrap()),
+                Err(e) => Err(e),
+            }
         })
-        .max()
-        .unwrap()
+        .collect::<Result<Vec<_>>>()
+    {
+        Ok(v) => Ok(v.into_iter().max().unwrap()),
+        Err(e) => Err(e),
+    }
 }
 
 fn visible_left(line: &[u8], idx: usize, tree: &u8) -> bool {
