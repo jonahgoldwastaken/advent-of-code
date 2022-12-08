@@ -1,16 +1,49 @@
 use anyhow::Result;
+use itertools::Itertools;
 
-type Grid = Vec<Vec<u8>>;
+struct Grid {
+    rows: Vec<Vec<u8>>,
+    cols: Vec<Vec<u8>>,
+}
+
+impl From<Vec<Vec<u8>>> for Grid {
+    fn from(rows: Vec<Vec<u8>>) -> Self {
+        let cols = (0..rows[0].len())
+            .map(|i| rows.iter().map(|row| row[i]).collect())
+            .collect();
+        Self { rows, cols }
+    }
+}
+
+impl Grid {
+    fn rows(&self) -> &[Vec<u8>] {
+        self.rows.as_ref()
+    }
+
+    fn cols(&self) -> &[Vec<u8>] {
+        self.cols.as_ref()
+    }
+
+    fn col(&self, idx: usize) -> Option<&[u8]> {
+        if idx < self.cols.len() {
+            Some(&self.cols[idx])
+        } else {
+            None
+        }
+    }
+}
 
 fn main() -> Result<()> {
-    let grid: Grid = aoc::load_input("eight")?
-        .lines()
-        .map(|l| {
-            l.chars()
-                .map(|c| String::from(c).parse().unwrap())
-                .collect()
-        })
-        .collect();
+    let grid: Grid = Grid::from(
+        aoc::load_input("eight")?
+            .lines()
+            .map(|l| {
+                l.chars()
+                    .map(|c| String::from(c).parse().unwrap())
+                    .collect_vec()
+            })
+            .collect_vec(),
+    );
 
     println!("Part one: {}", part_one(&grid));
     println!("Part two: {}", part_two(&grid));
@@ -18,13 +51,9 @@ fn main() -> Result<()> {
 }
 
 fn part_one(grid: &Grid) -> usize {
-    let mut columns: Vec<Vec<u8>> = vec![];
-    grid.iter().enumerate().fold(0, |res, (i, row)| {
+    grid.rows().iter().enumerate().fold(0, |res, (i, row)| {
         res + row.iter().enumerate().fold(0, |res, (j, tree)| {
-            if columns.get(j).is_none() {
-                columns.push(get_column(grid, j).unwrap());
-            }
-            let col = columns.get(j).unwrap();
+            let col = grid.cols().get(j).unwrap();
             if visible_left(row, j, tree)
                 || visible_right(row, j, tree)
                 || visible_left(col, i, tree)
@@ -39,17 +68,14 @@ fn part_one(grid: &Grid) -> usize {
 }
 
 fn part_two(grid: &Grid) -> usize {
-    let mut columns: Vec<Vec<u8>> = vec![];
-    grid.iter()
+    grid.rows()
+        .iter()
         .enumerate()
         .map(|(i, row)| {
             row.iter()
                 .enumerate()
                 .map(|(j, tree)| {
-                    if columns.get(j).is_none() {
-                        columns.push(get_column(grid, j).unwrap());
-                    }
-                    let col = columns.get(j).unwrap();
+                    let col = grid.col(j).unwrap();
                     count_left(row, j, tree)
                         * count_right(row, j, tree)
                         * count_left(col, i, tree)
@@ -94,13 +120,5 @@ fn count_right(line: &[u8], idx: usize, tree: &u8) -> usize {
             + 1
     } else {
         0
-    }
-}
-
-fn get_column(grid: &Grid, col: usize) -> Option<Vec<u8>> {
-    if grid[0].len() < col {
-        None
-    } else {
-        Some(grid.iter().map(|row| row[col]).collect())
     }
 }
