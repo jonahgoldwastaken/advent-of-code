@@ -17,7 +17,7 @@ fn main() -> Result<()> {
         .map(|l| l.0.chars().find(|c| l.1.contains(*c)).unwrap())
         .map(char_to_points)
         .sum();
-    println!("Part one: {}", total);
+    println!("Part one: {total}");
 
     let group_total: u64 = sacks
         .lines()
@@ -29,7 +29,7 @@ fn main() -> Result<()> {
         })
         .map(char_to_points)
         .sum();
-    println!("Part two: {}", group_total);
+    println!("Part two: {group_total}");
 
     Ok(())
 }

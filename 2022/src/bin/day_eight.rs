@@ -20,10 +20,6 @@ impl Grid {
         self.rows.as_ref()
     }
 
-    fn cols(&self) -> &[Vec<u8>] {
-        self.cols.as_ref()
-    }
-
     fn col(&self, idx: usize) -> Result<&[u8]> {
         if idx < self.cols.len() {
             Ok(&self.cols[idx])
