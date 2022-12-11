@@ -70,7 +70,6 @@ fn main() -> Result<()> {
                             res.test_false = monkey_idx
                         }
                     }
-
                     _ => (),
                 };
                 res
@@ -83,7 +82,7 @@ fn main() -> Result<()> {
 }
 
 fn calculate(mut monkeys: Vec<Monkey>, rounds: usize, divide: bool) -> usize {
-    let mo = monkeys.iter().fold(1, |res, m| res * m.test);
+    let mo = monkeys.iter().map(|m| m.test).product::<u64>();
     for _ in 0..rounds {
         for m_idx in 0..monkeys.len() {
             let monkey = monkeys[m_idx].to_owned();
