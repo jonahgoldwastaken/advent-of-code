@@ -3,10 +3,10 @@ use itertools::Itertools;
 use std::{collections::VecDeque, default::Default};
 
 #[derive(Default, Debug, Clone)]
-enum WorryOperation {
-    Addition(u64),
-    Multiplication(u64),
-    Double,
+enum Op {
+    Add(u64),
+    Mul(u64),
+    Pow,
     #[default]
     Unset,
 }
@@ -14,11 +14,11 @@ enum WorryOperation {
 #[derive(Default, Debug, Clone)]
 struct Monkey {
     items: VecDeque<u64>,
-    operation: WorryOperation,
+    op: Op,
     test: u64,
     test_true: usize,
     test_false: usize,
-    items_inspected: usize,
+    inspected: usize,
 }
 
 fn main() -> Result<()> {
@@ -35,51 +35,40 @@ fn main() -> Result<()> {
                     .collect::<String>()
                     .as_str()
                 {
-                    "Starting items" => line
-                        .trim()
-                        .replace("Starting items: ", "")
-                        .split(", ")
-                        .map(|s| s.trim().parse::<u64>().unwrap())
-                        .for_each(|item| res.items.push_back(item)),
+                    "Starting items" => {
+                        res.items = line
+                            .trim()
+                            .replace("Starting items: ", "")
+                            .split(", ")
+                            .map(|s| s.trim().parse::<u64>().unwrap())
+                            .collect()
+                    }
                     "Operation" => {
-                        line.trim()
-                            .replace("Operation: ", "")
-                            .split(' ')
-                            .for_each(|s| match s {
-                                "*" => res.operation = WorryOperation::Multiplication(0),
-                                "+" => res.operation = WorryOperation::Addition(0),
-                                x => {
-                                    if let Ok(x) = x.parse::<u64>() {
-                                        match res.operation {
-                                            WorryOperation::Addition(_) => {
-                                                res.operation = WorryOperation::Addition(x)
-                                            }
-                                            WorryOperation::Multiplication(_) => {
-                                                res.operation = WorryOperation::Multiplication(x)
-                                            }
-                                            WorryOperation::Unset => {
-                                                panic!("WorryOperation wasn't set properly")
-                                            }
-                                            _ => (),
-                                        }
-                                    } else if x == "old" {
-                                        if let WorryOperation::Multiplication(_) = res.operation {
-                                            res.operation = WorryOperation::Double
-                                        }
-                                    }
-                                }
-                            })
+                        let op_str = line.trim().replace("Operation: ", "");
+                        let mut op_str = op_str.split(' ');
+                        let last = op_str.clone().last().unwrap();
+                        match op_str.nth(3).unwrap() {
+                            "*" => {
+                                res.op = if last == "old" {
+                                    Op::Pow
+                                } else {
+                                    Op::Mul(last.parse::<u64>().unwrap())
+                                };
+                            }
+                            "+" => res.op = Op::Add(last.parse::<u64>().unwrap()),
+                            _ => (),
+                        }
                     }
                     "Test" => {
                         res.test = line.split(' ').last().unwrap().parse::<u64>().unwrap();
                     }
-                    "If true" => {
+                    x if x.starts_with("If ") => {
                         let monkey_idx = line.split(' ').last().unwrap().parse::<usize>().unwrap();
-                        res.test_true = monkey_idx;
-                    }
-                    "If false" => {
-                        let monkey_idx = line.split(' ').last().unwrap().parse::<usize>().unwrap();
-                        res.test_false = monkey_idx
+                        if x.ends_with("true") {
+                            res.test_true = monkey_idx;
+                        } else {
+                            res.test_false = monkey_idx
+                        }
                     }
 
                     _ => (),
@@ -99,10 +88,10 @@ fn calculate(mut monkeys: Vec<Monkey>, rounds: usize, divide: bool) -> usize {
         for m_idx in 0..monkeys.len() {
             let monkey = monkeys[m_idx].to_owned();
             monkey.items.into_iter().for_each(|level| {
-                let mut worry_level = match monkey.operation {
-                    WorryOperation::Double => (level % mo) * (level % mo) % mo,
-                    WorryOperation::Addition(i) => (level + i) % mo,
-                    WorryOperation::Multiplication(i) => (level % mo) * (i % mo) % mo,
+                let mut worry_level = match monkey.op {
+                    Op::Pow => (level % mo) * (level % mo) % mo,
+                    Op::Add(i) => (level + i) % mo,
+                    Op::Mul(i) => (level % mo) * (i % mo) % mo,
                     _ => 1,
                 };
                 if divide {
@@ -116,13 +105,13 @@ fn calculate(mut monkeys: Vec<Monkey>, rounds: usize, divide: bool) -> usize {
             });
 
             let monkey = monkeys.get_mut(m_idx).unwrap();
-            monkey.items_inspected += monkey.items.len();
+            monkey.inspected += monkey.items.len();
             monkey.items = VecDeque::new();
         }
     }
     monkeys
         .iter()
-        .map(|m| m.items_inspected)
+        .map(|m| m.inspected)
         .sorted()
         .rev()
         .take(2)
