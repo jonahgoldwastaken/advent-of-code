@@ -1,36 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
+use aoc::Grid;
 use itertools::Itertools;
 
-struct Grid {
-    rows: Vec<Vec<u8>>,
-    cols: Vec<Vec<u8>>,
-}
-
-impl From<Vec<Vec<u8>>> for Grid {
-    fn from(rows: Vec<Vec<u8>>) -> Self {
-        let cols = (0..rows[0].len())
-            .map(|i| rows.iter().map(|row| row[i]).collect())
-            .collect();
-        Self { rows, cols }
-    }
-}
-
-impl Grid {
-    fn rows(&self) -> &[Vec<u8>] {
-        self.rows.as_ref()
-    }
-
-    fn col(&self, idx: usize) -> Result<&[u8]> {
-        if idx < self.cols.len() {
-            Ok(&self.cols[idx])
-        } else {
-            Err(anyhow!("Invalid column index: {}", idx))
-        }
-    }
-}
-
 fn main() -> Result<()> {
-    let grid: Grid = Grid::from(
+    let grid: Grid<u8> = Grid::from(
         aoc::load_input("eight")?
             .lines()
             .map(|l| {
@@ -46,7 +19,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn part_one(grid: &Grid) -> Result<usize> {
+fn part_one(grid: &Grid<u8>) -> Result<usize> {
     match grid
         .rows()
         .iter()
@@ -75,7 +48,7 @@ fn part_one(grid: &Grid) -> Result<usize> {
     }
 }
 
-fn part_two(grid: &Grid) -> Result<usize> {
+fn part_two(grid: &Grid<u8>) -> Result<usize> {
     match grid
         .rows()
         .iter()
