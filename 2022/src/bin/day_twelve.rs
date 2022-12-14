@@ -74,7 +74,12 @@ where
 	let mut routes: Vec<(Point, usize)> = vec![(end, 0)];
 	let mut calculation_completed = None;
 	while calculation_completed.is_none() {
-		for (point, steps) in routes.clone() {
+		let latest_step = routes.last().unwrap().1;
+		for (point, steps) in routes
+			.clone()
+			.into_iter()
+			.skip_while(|(_, s)| *s != latest_step)
+		{
 			let new_routes = get_walkable_adjacent_points(&grid, point, steps, &routes);
 			if !new_routes.is_empty() {
 				routes.extend(new_routes);
@@ -106,7 +111,7 @@ fn get_walkable_adjacent_points(
 	let mut new_points: Vec<_> = Vec::new();
 	let row = grid.row(point.y).unwrap();
 	let col = grid.col(point.x).unwrap();
-	let elevation_range = point.elevation.saturating_sub(1)..='z' as usize;
+	let elevation_range = point.elevation.saturating_sub(1)..='z' as usize - 'a' as usize;
 	if point.x > 0 {
 		new_points.push((row[point.x - 1], steps + 1));
 	}
