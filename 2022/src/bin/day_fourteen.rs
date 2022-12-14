@@ -61,33 +61,37 @@ impl Cave {
 
 	fn insert_extend(&mut self, x: usize, y: usize, point: PointType) {
 		if self.x_start > x {
-			for row in &mut self.inner {
-				for _ in 0..(self.x_start - x) {
-					row.insert(0, Default::default());
-				}
-			}
-			self.x_start = x;
+			self.extend_left_by(1);
 		} else if self.x_end - 1 < x {
-			self.x_end = x + 1;
-			for row in &mut self.inner {
-				row.resize_with(self.x_end - self.x_start, Default::default);
-			}
+			self.extend_right_by(1);
 		}
 		if self.y_end - 1 < y {
-			self.resize_y(y + 1);
-		}
-		let test = x.overflowing_sub(self.x_start);
-		if test.1 {
-			println!("{x}, {}", self.x_start);
+			self.extend_depth_by(y + 1);
 		}
 		self.inner[y][x - self.x_start] = point;
 	}
 
-	fn resize_y(&mut self, depth: usize) {
-		self.y_end = depth;
-		self.inner.resize_with(self.y_end, || {
+	fn extend_depth_by(&mut self, depth: usize) {
+		self.inner.resize_with(depth + self.y_end, || {
 			vec![Default::default(); self.x_end - self.x_start]
 		});
+		self.y_end += depth;
+	}
+
+	fn extend_left_by(&mut self, rows_left: usize) {
+		for row in &mut self.inner {
+			for _ in 0..rows_left {
+				row.insert(0, Default::default());
+			}
+		}
+		self.x_start -= rows_left;
+	}
+
+	fn extend_right_by(&mut self, rows_right: usize) {
+		for row in &mut self.inner {
+			row.resize_with(rows_right + self.x_end - self.x_start, Default::default);
+		}
+		self.x_end += rows_right;
 	}
 
 	fn get(&self, x: usize, y: usize) -> Option<&PointType> {
@@ -97,17 +101,6 @@ impl Cave {
 				None
 			} else {
 				row.get(x.0)
-			}
-		})
-	}
-
-	fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut PointType> {
-		self.inner.get_mut(y).and_then(|row| {
-			let x = x.overflowing_sub(self.x_start);
-			if x.1 {
-				None
-			} else {
-				row.get_mut(x.0)
 			}
 		})
 	}
@@ -198,7 +191,7 @@ fn main() -> Result<()> {
 	);
 
 	cave.filter(|p| !matches!(p, PointType::Sand { falling: true }));
-	cave.resize_y(cave.boundaries().1.y + 3);
+	cave.extend_depth_by(1);
 	simulate_sand(&mut cave, true);
 	println!(
 		"Part two: {}",
@@ -218,30 +211,12 @@ fn simulate_sand(cave: &mut Cave, cave_floor: bool) {
 			y: 0,
 		};
 		while sand_pos.y < y_end {
-			if cave_floor {
-				if let Some(p) = cave.get_mut(sand_pos.x - 1, cave.boundaries().1.y) {
-					if matches!(p, PointType::Air) {
-						*p = PointType::Rock;
-					}
-				} else {
-					cave.insert_extend(sand_pos.x - 1, cave.boundaries().1.y, PointType::Rock);
-				}
-
-				if let Some(p) = cave.get_mut(sand_pos.x, cave.boundaries().1.y) {
-					if matches!(p, PointType::Air) {
-						*p = PointType::Rock;
-					}
-				}
-
-				if let Some(p) = cave.get_mut(sand_pos.x + 1, cave.boundaries().1.y) {
-					if matches!(p, PointType::Air) {
-						*p = PointType::Rock;
-					}
-				} else {
-					cave.insert_extend(sand_pos.x + 1, cave.boundaries().1.y, PointType::Rock);
-				}
+			if sand_pos.x == cave.boundaries().0.x {
+				cave.extend_left_by(1);
 			}
-
+			if sand_pos.x == cave.boundaries().1.x {
+				cave.extend_right_by(1);
+			}
 			if let Some(PointType::Air) = cave.get(sand_pos.x, sand_pos.y + 1) {
 				sand_pos.y += 1;
 			} else if let Some(PointType::Air) = cave.get(sand_pos.x - 1, sand_pos.y + 1) {
@@ -259,11 +234,11 @@ fn simulate_sand(cave: &mut Cave, cave_floor: bool) {
 			sand_pos.x,
 			sand_pos.y,
 			PointType::Sand {
-				falling: sand_pos.y >= y_end,
+				falling: !cave_floor && sand_pos.y >= y_end,
 			},
 		);
 
-		if sand_pos.y >= y_end {
+		if !cave_floor && sand_pos.y >= y_end {
 			break;
 		} else if let Some(PointType::Sand { falling: false }) = cave.get(SAND_START_X, 0) {
 			break;
